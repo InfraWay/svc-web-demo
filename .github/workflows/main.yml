@@ -15,7 +15,8 @@ jobs:
         run: |
           export TAG=${GITHUB_SHA:0:8}
           echo "$DOCKER_PASSWORD" | docker login docker.pkg.github.com -u "$DOCKER_USERNAME" --password-stdin
-          docker-compose push
+          docker build -t docker.pkg.github.com/infraway/srv-web-demo/web:$TAG .
+          docker push docker.pkg.github.com/infraway/srv-web-demo/web:$TAG
         if: github.ref == 'refs/heads/master'
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
