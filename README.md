@@ -1,2 +1,2 @@
-# srv-demo
-This is a demo service for presenting it right after infra installation
+# srv-web-demo
+This is a web demo service for presenting it right after infra installation

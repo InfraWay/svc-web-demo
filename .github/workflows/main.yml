@@ -1,0 +1,34 @@
+name: main
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Build Docker image
+        run: |
+          export TAG=${GITHUB_SHA:0:7}
+          docker-compose build
+      - name: Push Docker image
+        run: |
+          export TAG=${GITHUB_SHA:0:8}
+          echo "$DOCKER_PASSWORD" | docker login docker.pkg.github.com -u "$DOCKER_USERNAME" --password-stdin
+          docker-compose push
+        if: github.ref == 'refs/heads/master'
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Update deployment config
+        run: sed -i s/:latest/:${GITHUB_SHA:0:7}/ .kube/config.yaml
+        if: github.ref == 'refs/heads/master'
+
+      - name: Deploy
+        uses: sagebind/doks-kubectl-action@master
+        if: github.ref == 'refs/heads/master'
+        with:
+          access_token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          cluster: nyc1
+          args: apply -f config/deployment.yaml
