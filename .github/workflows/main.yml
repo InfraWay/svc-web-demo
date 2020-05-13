@@ -20,6 +20,7 @@ jobs:
 
       - name: Update deployment config
         run: |
+          export __REGISTRY_VERSION__=${GITHUB_SHA:0:7}
           sed -i "s|__APP_NAME__|${__APP_NAME__}|" .kube/config.yaml
           sed -i "s|__ENVIRONMENT__|${__ENVIRONMENT__}|" .kube/config.yaml
           sed -i "s|__NAMESPACE__|${__NAMESPACE__}|" .kube/config.yaml
@@ -32,13 +33,13 @@ jobs:
           __APP_NAME__: web
           __ENVIRONMENT__: dev
           __NAMESPACE__: infraway-dev
+          __HOST__: goose.dev
           __REGISTRY_IMAGE__: docker.pkg.github.com/infraway/srv-web-demo/web
-          __REGISTRY_VERSION__: ${GITHUB_SHA:0:7}
 
       - name: Deploy
         uses: sagebind/doks-kubectl-action@master
         if: github.ref == 'refs/heads/master'
         with:
           access_token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-          cluster: nyc1
+          cluster: infraway-cluster-1
           args: apply -f .kube/config.yaml
