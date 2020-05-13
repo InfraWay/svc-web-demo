@@ -23,7 +23,7 @@ jobs:
           export __REGISTRY_VERSION__=${GITHUB_SHA:0:7}
           sed -i "s|__APP_NAME__|${__APP_NAME__}|" .kube/deployment.yaml
           sed -i "s|__ENVIRONMENT__|${__ENVIRONMENT__}|" .kube/deployment.yaml
-          sed -i "s|__ENVIRONMENT__|${__ENVIRONMENT__}|" .kube/deployment.yaml
+          sed -i "s|__HOST__|${__HOST__}|" .kube/deployment.yaml
           sed -i "s|__NAMESPACE__|${__NAMESPACE__}|" .kube/deployment.yaml
           sed -i "s|__REGISTRY_IMAGE__|${__REGISTRY_IMAGE__}|" .kube/deployment.yaml
           sed -i "s|__REGISTRY_VERSION__|${__REGISTRY_VERSION__}|" .kube/deployment.yaml
