@@ -21,13 +21,14 @@ jobs:
       - name: Update deployment config
         run: |
           export __REGISTRY_VERSION__=${GITHUB_SHA:0:7}
-          sed -i "s|__APP_NAME__|${__APP_NAME__}|" .kube/config.yaml
-          sed -i "s|__ENVIRONMENT__|${__ENVIRONMENT__}|" .kube/config.yaml
-          sed -i "s|__NAMESPACE__|${__NAMESPACE__}|" .kube/config.yaml
-          sed -i "s|__REGISTRY_IMAGE__|${__REGISTRY_IMAGE__}|" .kube/config.yaml
-          sed -i "s|__REGISTRY_VERSION__|${__REGISTRY_VERSION__}|" .kube/config.yaml
+          sed -i "s|__APP_NAME__|${__APP_NAME__}|" .kube/deployment.yaml
+          sed -i "s|__ENVIRONMENT__|${__ENVIRONMENT__}|" .kube/deployment.yaml
+          sed -i "s|__ENVIRONMENT__|${__ENVIRONMENT__}|" .kube/deployment.yaml
+          sed -i "s|__NAMESPACE__|${__NAMESPACE__}|" .kube/deployment.yaml
+          sed -i "s|__REGISTRY_IMAGE__|${__REGISTRY_IMAGE__}|" .kube/deployment.yaml
+          sed -i "s|__REGISTRY_VERSION__|${__REGISTRY_VERSION__}|" .kube/deployment.yaml
 
-          cat .kube/config.yaml
+          cat .kube/deployment.yaml
         if: github.ref == 'refs/heads/master'
         env:
           __APP_NAME__: web
@@ -37,9 +38,9 @@ jobs:
           __REGISTRY_IMAGE__: docker.pkg.github.com/infraway/srv-web-demo/web
 
       - name: Deploy
-        uses: sagebind/doks-kubectl-action@master
+        uses: actions-hub/kubectl@master
         if: github.ref == 'refs/heads/master'
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
         with:
-          access_token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-          cluster: infraway-cluster-1
-          args: apply -f .kube/config.yaml
+          args: apply -f .kube/deployment.yaml
