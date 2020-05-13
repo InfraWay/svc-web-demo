@@ -20,11 +20,11 @@ jobs:
 
       - name: Update deployment config
         run: |
-          sed -i s/__APP_NAME__/${__APP_NAME__}/ .kube/config.yaml
-          sed -i s/__ENVIRONMENT__/${__ENVIRONMENT__}/ .kube/config.yaml
-          sed -i s/__NAMESPACE__/${__NAMESPACE__}/ .kube/config.yaml
-          sed -i s/__REGISTRY_IMAGE__/${__REGISTRY_IMAGE__}/ .kube/config.yaml
-          sed -i s/__REGISTRY_VERSION__/${__REGISTRY_VERSION__}/ .kube/config.yaml
+          sed -i "s|__APP_NAME__|${__APP_NAME__}|" .kube/config.yaml
+          sed -i "s|__ENVIRONMENT__|${__ENVIRONMENT__}|" .kube/config.yaml
+          sed -i "s|__NAMESPACE__|${__NAMESPACE__}|" .kube/config.yaml
+          sed -i "s|__REGISTRY_IMAGE__|${__REGISTRY_IMAGE__}|" .kube/config.yaml
+          sed -i "s|__REGISTRY_VERSION__|${__REGISTRY_VERSION__}|" .kube/config.yaml
 
           cat .kube/config.yaml
         if: github.ref == 'refs/heads/master'
