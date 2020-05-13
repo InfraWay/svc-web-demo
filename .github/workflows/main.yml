@@ -33,7 +33,7 @@ jobs:
           __ENVIRONMENT__: dev
           __NAMESPACE__: infraway-dev
           __REGISTRY_IMAGE__: docker.pkg.github.com/infraway/srv-web-demo/web
-          __REGISTRY_VERSION__: ${{ GITHUB_SHA:0:7 }}
+          __REGISTRY_VERSION__: ${GITHUB_SHA:0:7}
 
       - name: Deploy
         uses: sagebind/doks-kubectl-action@master
