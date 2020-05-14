@@ -41,7 +41,7 @@ jobs:
           __APP_NAME__: web
           __ENVIRONMENT__: dev
           __NAMESPACE__: infraway-dev
-          __HOST__: goose.dev
+          __HOST__: async.org
 
       - name: Deploy
         uses: actions-hub/kubectl@master
