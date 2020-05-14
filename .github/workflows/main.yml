@@ -10,22 +10,29 @@ jobs:
       - name: Build & Publish Docker image
         run: |
           export TAG=${GITHUB_SHA:0:7}
+          export REGISTRY_IMAGE="docker.pkg.github.com/$(echo $GITHUB_REPOSITORY | awk '{print tolower($0)}')"
           echo "$DOCKER_PASSWORD" | docker login docker.pkg.github.com -u "$DOCKER_USERNAME" --password-stdin
-          docker build -t docker.pkg.github.com/infraway/srv-web-demo/web:$TAG .
-          docker push docker.pkg.github.com/infraway/srv-web-demo/web:$TAG
+          docker build -t $REGISTRY_IMAGE:$TAG .
+          docker push $REGISTRY_IMAGE:$TAG
         if: github.ref == 'refs/heads/master'
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v1
 
       - name: Update deployment config
         run: |
           export __REGISTRY_VERSION__=${GITHUB_SHA:0:7}
+          export REGISTRY_IMAGE="docker.pkg.github.com/$(echo $GITHUB_REPOSITORY | awk '{print tolower($0)}')"
+          sed -i "s|REGISTRY_IMAGE|${REGISTRY_IMAGE}|" .kube/deployment.yaml
           sed -i "s|__APP_NAME__|${__APP_NAME__}|" .kube/deployment.yaml
           sed -i "s|__ENVIRONMENT__|${__ENVIRONMENT__}|" .kube/deployment.yaml
           sed -i "s|__HOST__|${__HOST__}|" .kube/deployment.yaml
           sed -i "s|__NAMESPACE__|${__NAMESPACE__}|" .kube/deployment.yaml
-          sed -i "s|__REGISTRY_IMAGE__|${__REGISTRY_IMAGE__}|" .kube/deployment.yaml
           sed -i "s|__REGISTRY_VERSION__|${__REGISTRY_VERSION__}|" .kube/deployment.yaml
 
           cat .kube/deployment.yaml
@@ -35,7 +42,6 @@ jobs:
           __ENVIRONMENT__: dev
           __NAMESPACE__: infraway-dev
           __HOST__: goose.dev
-          __REGISTRY_IMAGE__: docker.pkg.github.com/infraway/srv-web-demo/web
 
       - name: Deploy
         uses: actions-hub/kubectl@master
