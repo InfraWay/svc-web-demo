@@ -40,8 +40,8 @@ jobs:
         env:
           __APP_NAME__: web
           __ENVIRONMENT__: dev
-          __NAMESPACE__: infraway-dev
-          __HOST__: async.org
+          __NAMESPACE__: ${{ secrets.K8S_NAMESPACE }}
+          __HOST__: ${{ secrets.K8S_HOST }}
 
       - name: Deploy
         uses: actions-hub/kubectl@master
