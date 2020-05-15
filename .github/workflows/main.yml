@@ -11,7 +11,8 @@ jobs:
         run: |
           export TAG=${GITHUB_SHA:0:7}
           export REGISTRY_IMAGE="docker.pkg.github.com/$(echo $GITHUB_REPOSITORY | awk '{print tolower($0)}')/web"
-          export PR_NUMBER=$(cat $GITHUB_EVENT_PATH | jq '.number')
+          cp $GITHUB_EVENT_PATH ./event.json
+          export PR_NUMBER=$(cat ./event.json | jq '.number')
           echo $PR_NUMBER
           echo "$DOCKER_PASSWORD" | docker login docker.pkg.github.com -u "$DOCKER_USERNAME" --password-stdin
           docker build -t $REGISTRY_IMAGE:$TAG .
