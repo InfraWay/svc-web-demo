@@ -1,5 +1,8 @@
 name: main
-on: push
+on:
+  push: ~
+  pull_request:
+    types: [opened, reopened, closed]
 
 jobs:
   build:
@@ -11,11 +14,10 @@ jobs:
         run: |
           export TAG=${GITHUB_SHA:0:7}
           export REGISTRY_IMAGE="docker.pkg.github.com/$(echo $GITHUB_REPOSITORY | awk '{print tolower($0)}')/web"
-          echo $GITHUB_EVENT_PATH
           echo "$DOCKER_PASSWORD" | docker login docker.pkg.github.com -u "$DOCKER_USERNAME" --password-stdin
           docker build -t $REGISTRY_IMAGE:$TAG .
           docker push $REGISTRY_IMAGE:$TAG
-        if: github.ref == 'refs/heads/master'
+        #if: github.ref == 'refs/heads/master'
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
@@ -25,10 +27,24 @@ jobs:
     steps:
       - uses: actions/checkout@v1
 
+      - uses: jwalton/gh-find-current-pr@v1
+        id: find-pull-request
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - run: echo "Your PR is ${PR}"
+        if: success() && steps.find-pull-request.outputs.number
+        env:
+          PR: ${{ steps.find-pull-request.outputs.pr }}
+
       - name: Update deployment config
         run: |
           export __REGISTRY_VERSION__=${GITHUB_SHA:0:7}
           export REGISTRY_IMAGE="docker.pkg.github.com/$(echo $GITHUB_REPOSITORY | awk '{print tolower($0)}')/web"
+          if [ "$PR_NUMBER" != "" ]; then
+            export __HOST__="pull-${PR_NUMBER}.${__HOST__}"
+            export __APP_NAME__="${__APP_NAME__}-pull-${PR_NUMBER}"
+          fi
           sed -i "s|__REGISTRY_IMAGE__|${REGISTRY_IMAGE}|" .kube/deployment.yaml
           sed -i "s|__APP_NAME__|${__APP_NAME__}|" .kube/deployment.yaml
           sed -i "s|__ENVIRONMENT__|${__ENVIRONMENT__}|" .kube/deployment.yaml
@@ -37,17 +53,57 @@ jobs:
           sed -i "s|__REGISTRY_VERSION__|${__REGISTRY_VERSION__}|" .kube/deployment.yaml
 
           cat .kube/deployment.yaml
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master' || steps.find-pull-request.outputs.number
         env:
           __APP_NAME__: web
           __ENVIRONMENT__: dev
           __NAMESPACE__: ${{ secrets.K8S_NAMESPACE }}
           __HOST__: ${{ secrets.K8S_HOST }}
+          PR_NUMBER: ${{ steps.find-pull-request.outputs.number }}
 
       - name: Deploy
         uses: actions-hub/kubectl@master
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master' || steps.find-pull-request.outputs.number
         env:
           KUBE_CONFIG: ${{ secrets.K8S_KUBECONFIG }}
         with:
           args: apply -f .kube/deployment.yaml
+
+  cleanup:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v1
+
+      - uses: jwalton/gh-find-current-pr@v1
+        id: find-pull-request
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update deployment config
+        run: |
+          export __REGISTRY_VERSION__=${GITHUB_SHA:0:7}
+          export REGISTRY_IMAGE="docker.pkg.github.com/$(echo $GITHUB_REPOSITORY | awk '{print tolower($0)}')/web"
+          export __HOST__="pull-${PR_NUMBER}.${__HOST__}"
+          export __APP_NAME__="${__APP_NAME__}-pull-${PR_NUMBER}"
+          sed -i "s|__REGISTRY_IMAGE__|${REGISTRY_IMAGE}|" .kube/deployment.yaml
+          sed -i "s|__APP_NAME__|${__APP_NAME__}|" .kube/deployment.yaml
+          sed -i "s|__ENVIRONMENT__|${__ENVIRONMENT__}|" .kube/deployment.yaml
+          sed -i "s|__HOST__|${__HOST__}|" .kube/deployment.yaml
+          sed -i "s|__NAMESPACE__|${__NAMESPACE__}|" .kube/deployment.yaml
+          sed -i "s|__REGISTRY_VERSION__|${__REGISTRY_VERSION__}|" .kube/deployment.yaml
+        if: steps.find-pull-request.outputs.number && github.event.pull_request.state == 'closed'
+        env:
+          __APP_NAME__: web
+          __ENVIRONMENT__: dev
+          __NAMESPACE__: ${{ secrets.K8S_NAMESPACE }}
+          __HOST__: ${{ secrets.K8S_HOST }}
+          PR_NUMBER: ${{ steps.find-pull-request.outputs.number }}
+
+      - name: Delete k8s resources related to pull request
+        uses: actions-hub/kubectl@master
+        if: steps.find-pull-request.outputs.number && github.event.pull_request.state == 'closed'
+        env:
+          KUBE_CONFIG: ${{ secrets.K8S_KUBECONFIG }}
+        with:
+          args: delete -f .kube/deployment.yaml
