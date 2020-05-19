@@ -42,8 +42,8 @@ jobs:
           export __REGISTRY_VERSION__=${GITHUB_SHA:0:7}
           export REGISTRY_IMAGE="docker.pkg.github.com/$(echo $GITHUB_REPOSITORY | awk '{print tolower($0)}')/web"
           if [ "$PR_NUMBER" != "" ]; then
-            export __HOST__ = "pull-${PR_NUMBER}.${__HOST__}"
-            export __APP_NAME__ = "${__APP_NAME__}-pull-${PR_NUMBER}"
+            export __HOST__="pull-${PR_NUMBER}.${__HOST__}"
+            export __APP_NAME__="${__APP_NAME__}-pull-${PR_NUMBER}"
           fi
           # pull_number=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
           sed -i "s|__REGISTRY_IMAGE__|${REGISTRY_IMAGE}|" .kube/deployment.yaml
