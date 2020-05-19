@@ -45,7 +45,6 @@ jobs:
             export __HOST__="pull-${PR_NUMBER}.${__HOST__}"
             export __APP_NAME__="${__APP_NAME__}-pull-${PR_NUMBER}"
           fi
-          # pull_number=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
           sed -i "s|__REGISTRY_IMAGE__|${REGISTRY_IMAGE}|" .kube/deployment.yaml
           sed -i "s|__APP_NAME__|${__APP_NAME__}|" .kube/deployment.yaml
           sed -i "s|__ENVIRONMENT__|${__ENVIRONMENT__}|" .kube/deployment.yaml
@@ -103,7 +102,7 @@ jobs:
 
       - name: Delete k8s resources related to pull request
         uses: actions-hub/kubectl@master
-        if: steps.find-pull-request.outputs.number && github.event.pull_request.state == 'closed'
+        if: steps.find-pull-request.outputs.number
         env:
           KUBE_CONFIG: ${{ secrets.K8S_KUBECONFIG }}
         with:
