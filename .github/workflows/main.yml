@@ -32,6 +32,11 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - run: echo "Your PR is ${PR}"
+        if: success() && steps.find-pull-request.outputs.number
+        env:
+          PR: ${{ steps.find-pull-request.outputs.pr }}
+
       - name: Update deployment config
         run: |
           export __REGISTRY_VERSION__=${GITHUB_SHA:0:7}
