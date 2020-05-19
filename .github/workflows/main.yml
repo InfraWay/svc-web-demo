@@ -92,7 +92,7 @@ jobs:
           sed -i "s|__HOST__|${__HOST__}|" .kube/deployment.yaml
           sed -i "s|__NAMESPACE__|${__NAMESPACE__}|" .kube/deployment.yaml
           sed -i "s|__REGISTRY_VERSION__|${__REGISTRY_VERSION__}|" .kube/deployment.yaml
-        if: steps.find-pull-request.outputs.number && github.event.pull_request.state == 'closed'
+        if: steps.find-pull-request.outputs.number
         env:
           __APP_NAME__: web
           __ENVIRONMENT__: dev
