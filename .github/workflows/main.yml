@@ -41,7 +41,6 @@ jobs:
         run: |
           export __REGISTRY_VERSION__=${GITHUB_SHA:0:7}
           export REGISTRY_IMAGE="docker.pkg.github.com/$(echo $GITHUB_REPOSITORY | awk '{print tolower($0)}')/web"
-          echo "$PR_NUMBER"
           if [ "$PR_NUMBER" != "" ]; then
             export __HOST__ = "pull-${PR_NUMBER}.${__HOST__}"
             export __APP_NAME__ = "${__APP_NAME__}-pull-${PR_NUMBER}"
@@ -55,7 +54,7 @@ jobs:
           sed -i "s|__REGISTRY_VERSION__|${__REGISTRY_VERSION__}|" .kube/deployment.yaml
 
           cat .kube/deployment.yaml
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master' || steps.find-pull-request.outputs.number
         env:
           __APP_NAME__: web
           __ENVIRONMENT__: dev
@@ -65,7 +64,7 @@ jobs:
 
       - name: Deploy
         uses: actions-hub/kubectl@master
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master' || steps.find-pull-request.outputs.number
         env:
           KUBE_CONFIG: ${{ secrets.K8S_KUBECONFIG }}
         with:
