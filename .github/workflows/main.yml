@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
 
-      - uses: jwalton/gh-find-current-pr@v1
+      - uses: 8BitJonny/gh-find-current-pr@v1.0.3
         id: find-pull-request
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -75,7 +75,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
 
-      - uses: jwalton/gh-find-current-pr@v1
+      - uses: 8BitJonny/gh-find-current-pr@v1.0.3
         id: find-pull-request
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
