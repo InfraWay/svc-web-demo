@@ -55,6 +55,16 @@ jobs:
           target_url: ${{ env.__TARGET_URL__ }}
           environment: ${{ env.__ENVIRONMENT__ }}
 
+      - uses: kriasoft/create-dns-record@v1
+        with:
+          type: "A"
+          name: ${{ env.__HOST__ }}
+          content: ${{ secrets.CF_IP }}
+          ttl: 1
+          proxied: true
+          token: ${{ secrets.CF_TOKEN }}
+          zone: ${{ secrets.CF_ZONE }}
+
       - name: Update deployment config
         run: |
           export __REGISTRY_VERSION__=${GITHUB_SHA:0:7}
@@ -116,6 +126,7 @@ jobs:
           sed -i "s|__HOST__|${__HOST__}|" .kube/deployment.yaml
           sed -i "s|__NAMESPACE__|${__NAMESPACE__}|" .kube/deployment.yaml
           sed -i "s|__REGISTRY_VERSION__|${__REGISTRY_VERSION__}|" .kube/deployment.yaml
+          echo "::set-env name=__HOST__::${__HOST__}"
         env:
           __APP_NAME__: web
           __ENVIRONMENT__: dev
@@ -129,3 +140,9 @@ jobs:
           KUBE_CONFIG: ${{ secrets.K8S_KUBECONFIG }}
         with:
           args: delete -f .kube/deployment.yaml
+
+      - uses: kriasoft/delete-dns-record@v1
+        with:
+          name: ${{ env.__HOST__ }}
+          token: ${{ secrets.CF_TOKEN }}
+          zone: ${{ secrets.CF_ZONE }}
