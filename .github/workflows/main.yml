@@ -33,14 +33,32 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Deployment config
+        run: |
+          if [ "$PR_NUMBER" != "" ]; then
+            __HOST__="pull-${PR_NUMBER}.${__HOST__}"
+            __APP_NAME__="${__APP_NAME__}-pull-${PR_NUMBER}"
+          fi
+          echo "::set-env name=__HOST__::${__HOST__}"
+          echo "::set-env name=__APP_NAME__::${__APP_NAME__}"
+          echo "::set-env name=__TARGET_URL__::https://${__HOST__}"
+        env:
+          __ENVIRONMENT__: test
+          __HOST__: ${{ secrets.K8S_HOST }}
+          PR_NUMBER: ${{ steps.find-pull-request.outputs.number }}
+
+      - uses: chrnorm/deployment-action@releases/v1
+        name: Create GitHub deployment
+        id: deployment
+        with:
+          token: ${{ github.token }}
+          target_url: ${{ env.__TARGET_URL__ }}
+          environment: ${{ env.__ENVIRONMENT__ }}
+
       - name: Update deployment config
         run: |
           export __REGISTRY_VERSION__=${GITHUB_SHA:0:7}
           export REGISTRY_IMAGE="docker.pkg.github.com/$(echo $GITHUB_REPOSITORY | awk '{print tolower($0)}')/web"
-          if [ "$PR_NUMBER" != "" ]; then
-            export __HOST__="pull-${PR_NUMBER}.${__HOST__}"
-            export __APP_NAME__="${__APP_NAME__}-pull-${PR_NUMBER}"
-          fi
           sed -i "s|__REGISTRY_IMAGE__|${REGISTRY_IMAGE}|" .kube/deployment.yaml
           sed -i "s|__APP_NAME__|${__APP_NAME__}|" .kube/deployment.yaml
           sed -i "s|__ENVIRONMENT__|${__ENVIRONMENT__}|" .kube/deployment.yaml
@@ -52,10 +70,7 @@ jobs:
         if: github.ref == 'refs/heads/master' || steps.find-pull-request.outputs.number
         env:
           __APP_NAME__: web
-          __ENVIRONMENT__: dev
           __NAMESPACE__: ${{ secrets.K8S_NAMESPACE }}
-          __HOST__: ${{ secrets.K8S_HOST }}
-          PR_NUMBER: ${{ steps.find-pull-request.outputs.number }}
 
       - name: Deploy
         uses: actions-hub/kubectl@master
@@ -64,6 +79,24 @@ jobs:
           KUBE_CONFIG: ${{ secrets.K8S_KUBECONFIG }}
         with:
           args: apply -f .kube/deployment.yaml
+
+      - name: Update deployment status (success)
+        if: success()
+        uses: chrnorm/deployment-status@releases/v1
+        with:
+          token: ${{ github.token }}
+          target_url: https://my-app-url.com
+          state: "success"
+          deployment_id: ${{ steps.deployment.outputs.deployment_id }}
+
+      - name: Update deployment status (failure)
+        if: failure()
+        uses: chrnorm/deployment-status@releases/v1
+        with:
+          token: "${{ github.token }}"
+          target_url: http://my-app-url.com
+          state: "failure"
+          deployment_id: ${{ steps.deployment.outputs.deployment_id }}
 
   cleanup:
     runs-on: ubuntu-latest
