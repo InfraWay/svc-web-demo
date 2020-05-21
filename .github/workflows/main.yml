@@ -59,11 +59,11 @@ jobs:
         with:
           type: "A"
           name: ${{ env.__HOST__ }}
-          content: ${{ secrets.CF_IP }}
+          content: ${{ secrets.CLOUDFLARE_IP }}
           ttl: 1
           proxied: true
-          token: ${{ secrets.CF_TOKEN }}
-          zone: ${{ secrets.CF_ZONE }}
+          token: ${{ secrets.CLOUDFLARE_TOKEN }}
+          zone: ${{ secrets.CLOUDFLARE_ZONE }}
 
       - name: Update deployment config
         run: |
@@ -95,7 +95,7 @@ jobs:
         uses: chrnorm/deployment-status@releases/v1
         with:
           token: ${{ github.token }}
-          target_url: https://my-app-url.com
+          target_url: ${{ env.__TARGET_URL__ }}
           state: "success"
           deployment_id: ${{ steps.deployment.outputs.deployment_id }}
 
@@ -103,8 +103,8 @@ jobs:
         if: failure()
         uses: chrnorm/deployment-status@releases/v1
         with:
-          token: "${{ github.token }}"
-          target_url: http://my-app-url.com
+          token: ${{ github.token }}
+          target_url: ${{ env.__TARGET_URL__ }}
           state: "failure"
           deployment_id: ${{ steps.deployment.outputs.deployment_id }}
 
@@ -144,5 +144,5 @@ jobs:
       - uses: kriasoft/delete-dns-record@v1
         with:
           name: ${{ env.__HOST__ }}
-          token: ${{ secrets.CF_TOKEN }}
-          zone: ${{ secrets.CF_ZONE }}
+          token: ${{ secrets.CLOUDFLARE_TOKEN }}
+          zone: ${{ secrets.CLOUDFLARE_ZONE }}
