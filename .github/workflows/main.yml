@@ -41,6 +41,7 @@ jobs:
           fi
           echo "::set-env name=__HOST__::${__HOST__}"
           echo "::set-env name=__APP_NAME__::${__APP_NAME__}"
+          echo "::set-env name=__ENVIRONMENT__::${__ENVIRONMENT__}"
           echo "::set-env name=__TARGET_URL__::https://${__HOST__}"
         env:
           __ENVIRONMENT__: test
@@ -79,7 +80,6 @@ jobs:
           cat .kube/deployment.yaml
         if: github.ref == 'refs/heads/master' || steps.find-pull-request.outputs.number
         env:
-          __APP_NAME__: web
           __NAMESPACE__: ${{ secrets.K8S_NAMESPACE }}
 
       - name: Deploy
@@ -129,7 +129,7 @@ jobs:
           echo "::set-env name=__HOST__::${__HOST__}"
         env:
           __APP_NAME__: web
-          __ENVIRONMENT__: dev
+          __ENVIRONMENT__: test
           __NAMESPACE__: ${{ secrets.K8S_NAMESPACE }}
           __HOST__: ${{ secrets.K8S_HOST }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
