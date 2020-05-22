@@ -44,6 +44,7 @@ jobs:
           echo "::set-env name=__ENVIRONMENT__::${__ENVIRONMENT__}"
           echo "::set-env name=__TARGET_URL__::https://${__HOST__}"
         env:
+          __APP_NAME__: web
           __ENVIRONMENT__: test
           __HOST__: ${{ secrets.K8S_HOST }}
           PR_NUMBER: ${{ steps.find-pull-request.outputs.number }}
