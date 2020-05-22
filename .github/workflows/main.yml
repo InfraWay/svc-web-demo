@@ -55,7 +55,7 @@ jobs:
           target_url: ${{ env.__TARGET_URL__ }}
           environment: ${{ env.__ENVIRONMENT__ }}
 
-      - uses: infraway/create-dns-record@v1.2
+      - uses: infraway/create-dns-record@v1.3
         with:
           type: "A"
           name: ${{ env.__HOST__ }}
