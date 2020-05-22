@@ -57,7 +57,7 @@ jobs:
           target_url: ${{ env.__TARGET_URL__ }}
           environment: ${{ env.__ENVIRONMENT__ }}
 
-      - uses: infraway/create-dns-record@v1.3
+      - uses: infraway/create-dns-record@v1
         with:
           type: "A"
           name: ${{ env.__HOST__ }}
@@ -142,7 +142,7 @@ jobs:
         with:
           args: delete -f .kube/deployment.yaml
 
-      - uses: kriasoft/delete-dns-record@v1
+      - uses: infraway/delete-dns-record@v1
         with:
           name: ${{ env.__HOST__ }}
           token: ${{ secrets.CLOUDFLARE_TOKEN }}
