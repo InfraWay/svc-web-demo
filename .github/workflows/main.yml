@@ -2,7 +2,7 @@ name: main
 on:
   push: ~
   pull_request:
-    types: [opened, reopened, closed]
+    types: [closed]
 
 jobs:
   build:
@@ -57,7 +57,7 @@ jobs:
           target_url: ${{ env.__TARGET_URL__ }}
           environment: ${{ env.__ENVIRONMENT__ }}
 
-      - uses: infraway/create-dns-record@v1.5
+      - uses: infraway/create-dns-record@v1.6
         with:
           type: "A"
           name: ${{ env.__HOST__ }}
@@ -144,7 +144,7 @@ jobs:
         with:
           args: delete -f .kube/deployment.yaml
 
-      - uses: infraway/delete-dns-record@v1.2
+      - uses: infraway/delete-dns-record@v1.3
         with:
           name: ${{ env.__HOST__ }}
           token: ${{ secrets.CLOUDFLARE_TOKEN }}
