@@ -97,6 +97,7 @@ jobs:
         with:
           token: ${{ github.token }}
           target_url: ${{ env.__TARGET_URL__ }}
+          environment_url: ${{ env.__TARGET_URL__ }}
           state: "success"
           deployment_id: ${{ steps.deployment.outputs.deployment_id }}
 
@@ -106,6 +107,7 @@ jobs:
         with:
           token: ${{ github.token }}
           target_url: ${{ env.__TARGET_URL__ }}
+          environment_url: ${{ env.__TARGET_URL__ }}
           state: "failure"
           deployment_id: ${{ steps.deployment.outputs.deployment_id }}
 
