@@ -33,6 +33,7 @@ deploy:
   when: manual
   script: |
     K8S_HOST=$(echo $K8S_HOST | base64 -d)
+    echo "CI_MERGE_REQUEST_ID=$CI_MERGE_REQUEST_ID"
     if [ "$CI_MERGE_REQUEST_ID" != "" ]; then
       K8S_HOST="pull-${CI_MERGE_REQUEST_ID}.${K8S_HOST}"
       PROJECT_NAME="${PROJECT_NAME}-pull-${CI_MERGE_REQUEST_ID}"
