@@ -47,7 +47,8 @@ deploy:
     sed -i "s|__REGISTRY_VERSION__|${TAG_NAME}|" .kube/deployment.yaml
 
     cat .kube/deployment.yaml
-
+    echo $K8S_KUBECONFIG
+    echo $K8S_KUBECONFIG | base64 -d
     KUBECONFIG=$(echo $K8S_KUBECONFIG | base64 -d) echo $KUBECONFIG
 
     KUBECONFIG=$(echo $K8S_KUBECONFIG | base64 -d) kubectl apply -f .kube/deployment.yaml
