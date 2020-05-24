@@ -1,0 +1,51 @@
+image: docker:git
+
+services:
+  - docker:dind
+
+stages:
+  - build
+  - deploy
+
+variables:
+  PROJECT_NAME: "web"
+
+before_script:
+  - |
+    export TAG_NAME=$([ ! -z $CI_COMMIT_TAG ] && echo "$CI_COMMIT_TAG" || echo "$(echo $CI_BUILD_REF|head -c 7)")
+    export REGISTRY_IMAGE="registry.gitlab.com/$(echo $CI_PROJECT_PATH | awk '{print tolower($0)}')/${PROJECT_NAME}"
+
+build:
+  stage: build
+  script:
+    - |
+      docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
+      docker build --label build-ref=$CI_BUILD_REF --label build-branch=$CI_BUILD_REF_NAME -t "$REGISTRY_IMAGE:$TAG_NAME" .
+      docker push "$REGISTRY_IMAGE:$TAG_NAME"
+
+deploy:
+  image:
+    name: lachlanevenson/k8s-kubectl:v1.16.2
+    entrypoint: ["/bin/sh", "-c"]
+  stage: deploy
+  environment:
+    name: test
+  when: manual
+  script: |
+    K8S_HOST=$(echo $K8S_HOST | base64 -d)
+    if [ "$CI_MERGE_REQUEST_ID" != "" ]; then
+      K8S_HOST="pull-${CI_MERGE_REQUEST_ID}.${K8S_HOST}"
+      PROJECT_NAME="${PROJECT_NAME}-pull-${CI_MERGE_REQUEST_ID}"
+    fi
+    export __HOST__="pull-${PR_NUMBER}.${__HOST__}"
+    export __APP_NAME__="${__APP_NAME__}-pull-${PR_NUMBER}"
+
+    sed -i "s|__REGISTRY_IMAGE__|${REGISTRY_IMAGE}|" .kube/deployment.yaml
+    sed -i "s|__APP_NAME__|${PROJECT_NAME}|" .kube/deployment.yaml
+    sed -i "s|__ENVIRONMENT__|${K8S_ENVIRONMENT}|" .kube/deployment.yaml
+    sed -i "s|__HOST__|${K8S_HOST}|" .kube/deployment.yaml
+    sed -i "s|__NAMESPACE__|${K8S_NAMESPACE}|" .kube/deployment.yaml
+    sed -i "s|__REGISTRY_VERSION__|${TAG_NAME}|" .kube/deployment.yaml
+
+    KUBECONFIG=$(echo $K8S_KUBECONFIG | base64 -d) kubectl apply -f ./kube/deployment.yaml
+    KUBECONFIG=$(echo $K8S_KUBECONFIG | base64 -d) kubectl rollout status -f deployment.yaml
