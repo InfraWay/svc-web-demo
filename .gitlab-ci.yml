@@ -14,8 +14,12 @@ before_script:
   - |
     export TAG_NAME=$([ ! -z $CI_COMMIT_TAG ] && echo "$CI_COMMIT_TAG" || echo "$(echo $CI_BUILD_REF|head -c 7)")
     export REGISTRY_IMAGE="registry.gitlab.com/$(echo $CI_PROJECT_PATH | awk '{print tolower($0)}')/${PROJECT_NAME}"
+    export K8S_ENVIRONMENT="test"
 
 build:
+  only:
+    - pushes
+  #    - merge_requests
   stage: build
   script:
     - |
@@ -28,33 +32,51 @@ deploy:
     name: lachlanevenson/k8s-kubectl:v1.16.2
     entrypoint: ["/bin/sh", "-c"]
   stage: deploy
+  only:
+    - master
+  dependencies:
+    - build
   environment:
     name: test
-  when: manual
   script: |
-    echo "K8S_HOST=$K8S_HOST"
-    echo "K8S_NAMESPACE=$K8S_NAMESPACE"
-    echo "K8S_KUBECONFIG=$K8S_KUBECONFIG"
-    echo "CLOUDFLARE_IP=$CLOUDFLARE_IP"
-
     K8S_HOST=$(echo $K8S_HOST | base64 -d)
-    echo "CI_MERGE_REQUEST_ID=$CI_MERGE_REQUEST_ID"
-    if [ "$CI_MERGE_REQUEST_ID" != "" ]; then
-      K8S_HOST="pull-${CI_MERGE_REQUEST_ID}.${K8S_HOST}"
-      PROJECT_NAME="${PROJECT_NAME}-pull-${CI_MERGE_REQUEST_ID}"
-    fi
 
     sed -i "s|__REGISTRY_IMAGE__|${REGISTRY_IMAGE}|" .kube/deployment.yaml
     sed -i "s|__APP_NAME__|${PROJECT_NAME}|" .kube/deployment.yaml
-    sed -i "s|__ENVIRONMENT__|test|" .kube/deployment.yaml
+    sed -i "s|__ENVIRONMENT__|${K8S_ENVIRONMENT}|" .kube/deployment.yaml
     sed -i "s|__HOST__|${K8S_HOST}|" .kube/deployment.yaml
     sed -i "s|__NAMESPACE__|${K8S_NAMESPACE}|" .kube/deployment.yaml
     sed -i "s|__REGISTRY_VERSION__|${TAG_NAME}|" .kube/deployment.yaml
 
-    cat .kube/deployment.yaml
-    echo $K8S_KUBECONFIG
-    echo $K8S_KUBECONFIG | base64 -d
-    KUBECONFIG=$(echo $K8S_KUBECONFIG | base64 -d) echo $KUBECONFIG
+    echo $K8S_KUBECONFIG | base64 -d > .kube/config.yaml
+    kubectl --kubeconfig=.kube/config.yaml apply -f .kube/deployment.yaml
 
-    KUBECONFIG=$(echo $K8S_KUBECONFIG | base64 -d) kubectl apply -f .kube/deployment.yaml
-    KUBECONFIG=$(echo $K8S_KUBECONFIG | base64 -d) kubectl rollout status -f .kube/deployment.yaml
+#deploy_pr:
+#  image:
+#    name: lachlanevenson/k8s-kubectl:v1.16.2
+#    entrypoint: ["/bin/sh", "-c"]
+#  stage: deploy
+#  only:
+#    - merge_requests
+#  environment:
+#    name: test
+#  dependencies:
+#    - build
+#  when: manual
+#  script: |
+#    K8S_HOST=$(echo $K8S_HOST | base64 -d)
+#    echo "CI_MERGE_REQUEST_IID=$CI_MERGE_REQUEST_IID"
+#    if [ "$CI_MERGE_REQUEST_IID" != "" ]; then
+#      K8S_HOST="pull-${CI_MERGE_REQUEST_IID}.${K8S_HOST}"
+#      PROJECT_NAME="${PROJECT_NAME}-pull-${CI_MERGE_REQUEST_IID}"
+#    fi
+#
+#    sed -i "s|__REGISTRY_IMAGE__|${REGISTRY_IMAGE}|" .kube/deployment.yaml
+#    sed -i "s|__APP_NAME__|${PROJECT_NAME}|" .kube/deployment.yaml
+#    sed -i "s|__ENVIRONMENT__|${K8S_ENVIRONMENT}|" .kube/deployment.yaml
+#    sed -i "s|__HOST__|${K8S_HOST}|" .kube/deployment.yaml
+#    sed -i "s|__NAMESPACE__|${K8S_NAMESPACE}|" .kube/deployment.yaml
+#    sed -i "s|__REGISTRY_VERSION__|${TAG_NAME}|" .kube/deployment.yaml
+#
+#    echo $K8S_KUBECONFIG | base64 -d > .kube/config.yaml
+#    kubectl --kubeconfig=.kube/config.yaml apply -f .kube/deployment.yaml
