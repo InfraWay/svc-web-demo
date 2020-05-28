@@ -3,10 +3,10 @@ definitions:
     - step: &build
         name: Build
         script:
-          - >-
+          - |
             TAG_NAME=$([ ! -z $BITBUCKET_TAG ] && echo "$BITBUCKET_TAG" || echo "$(echo $BITBUCKET_COMMIT|head -c 7)")
             REGISTRY_IMAGE="infraway/svc-web-demo"
-            echo "$DOCKER_PASSWORD" | docker login "$DOCKER_HOST" -u "$DOCKER_USERNAME" --password-stdin
+            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
             docker build --label build-ref=$BITBUCKET_COMMIT --label build-branch=$BITBUCKET_BRANCH -t "$REGISTRY_IMAGE:$TAG_NAME" .
             docker push "$REGISTRY_IMAGE:$TAG_NAME"
         services:
@@ -15,9 +15,10 @@ definitions:
         name: Deploy
         deployment: test
         script:
-          - >-
+          - |
             REGISTRY_IMAGE="infraway/svc-web-demo"
             PROJECT_NAME="web"
+            K8S_ENVIRONMENT="test"
             TAG_NAME=$([ ! -z $BITBUCKET_TAG ] && echo "$BITBUCKET_TAG" || echo "$(echo $BITBUCKET_COMMIT|head -c 7)")
             sed -i "s|__REGISTRY_IMAGE__|${REGISTRY_IMAGE}|" .kube/deployment.yaml
             sed -i "s|__APP_NAME__|${PROJECT_NAME}|" .kube/deployment.yaml
@@ -26,17 +27,19 @@ definitions:
             sed -i "s|__NAMESPACE__|${K8S_NAMESPACE}|" .kube/deployment.yaml
             sed -i "s|__REGISTRY_VERSION__|${TAG_NAME}|" .kube/deployment.yaml
 
-            export KUBE_CONFIG=$(echo $K8S_KUBECONFIG | base64 -d)
           - pipe: atlassian/kubectl-run:1.1.2
             variables:
-              KUBE_CONFIG: $KUBE_CONFIG
+              KUBE_CONFIG: $K8S_KUBECONFIG
               KUBECTL_COMMAND: 'apply'
               RESOURCE_PATH: '.kube/deployment.yaml'
 
 pipelines:
   default:
     - step: *build
-    - step: *deploy
+    - step:
+        <<: *deploy
+        deployment: production
+        trigger: manual
 
   pull-requests:
     '**':
